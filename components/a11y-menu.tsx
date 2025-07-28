@@ -30,7 +30,7 @@ const HashtagIcon = (props: React.ComponentPropsWithoutRef<"svg">) => {
 
 
 
-export default function AccessibleColorPicker() {
+export default function A11yMenu() {
 
 
     const [selectedColor, setSelectedColor] = useState("#E89623");
