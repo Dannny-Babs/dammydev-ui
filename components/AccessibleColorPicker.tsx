@@ -6,7 +6,7 @@ import { CheckIcon, XIcon } from "lucide-react"
 
 import { useEffect, useState } from "react"
 import clsx from "clsx"
-import { getContrastColor, getContrastRatio, rgbToHex, hexToRgbValues } from "@/lib/color-utils"
+import { getContrastColor, getContrastRatio, rgbToHex, hexToRgbValues, getColorSuggestions } from "@/lib/color-utils"
 import { getAccessibilityLevel, getContrastStatus, getAccessibilityBadge } from "@/lib/accessibility-utils"
 
 const HashtagIcon = (props: React.ComponentPropsWithoutRef<"svg">) => {
@@ -37,15 +37,13 @@ export default function AccessibleColorPicker() {
     const [backgroundColor, setBackgroundColor] = useState("#FFFFFF");
     const [contrastRatio, setContrastRatio] = useState(4.51);
     const [rgbValues, setRgbValues] = useState({ r: 232, g: 150, b: 35 });
-    const [suggestions, setSuggestions] = useState([
-        "#E89623",
-        "#E89623",
-        "#828181",
-        "#555968",
-        "#2C2C2C",
-        "#3C3C434A",
-
-    ]);
+    const [suggestions, setSuggestions] = useState<Array<{
+        hex: string;
+        contrastRatio: number;
+        level: string;
+        label: string;
+    }>>([]);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
     useEffect(() => {
         const updateContrastRatio = async () => {
@@ -65,13 +63,34 @@ export default function AccessibleColorPicker() {
         setRgbValues(hexToRgbValues(selectedColor));
     }, [selectedColor]);
 
+    // Fetch color suggestions when colors change
+    useEffect(() => {
+        const fetchSuggestions = async () => {
+            setLoadingSuggestions(true);
+            try {
+                const result = await getColorSuggestions(selectedColor, backgroundColor);
+                setSuggestions(result.suggestions);
+            } catch (error) {
+                console.error('Failed to fetch color suggestions:', error);
+            } finally {
+                setLoadingSuggestions(false);
+            }
+        };
+
+        fetchSuggestions();
+    }, [selectedColor, backgroundColor]);
+
 
 
     return (
 
         <div className="flex flex-row gap-4 items-start justify-center   rounded-2xl p-2 border-1 border-gray-300 shadow-md ">
             <div className="flex flex-col gap-2 items-center justify-between   w-[300px] ">
-                <ColorPicker default_value={selectedColor} onChange={setSelectedColor} />
+                <ColorPicker
+                    default_value={selectedColor}
+                    onChange={setSelectedColor}
+                    backgroundHex={backgroundColor}
+                />
 
                 <div className="flex flex-row gap-2 items-center justify-center w-full mt-4">
                     <div className="flex flex-col gap-1 items-start justify-center w-1/3">
@@ -191,7 +210,7 @@ export default function AccessibleColorPicker() {
                         </div>
 
                     </div>
-                    <p className="text-sm font-medium font-sans text-neutral-800">
+                    <p className="text-sm font-medium font-sans text-gray-500">
                         {getAccessibilityLevel(contrastRatio).description}
                     </p>
                 </div>
@@ -200,23 +219,35 @@ export default function AccessibleColorPicker() {
                     <h3 className="text-sm font-medium font-sans text-neutral-800">
                         Suggestions
                     </h3>
-                    <div className="flex flex-wrap gap-2 items-start justify-start w-full bg-gray-50 rounded-xl p-2 border-1 border-slate-200 ">
-                        {
+                    <div className="flex flex-wrap gap-2 items-start justify-start w-full bg-gray-50 rounded-xl p-2 border-1 border-slate-200 min-h-[60px]">
+                        {loadingSuggestions ? (
+                            <div className="flex items-center justify-center w-full py-4">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
+                            </div>
+                        ) : suggestions.length > 0 ? (
                             suggestions.map((suggestion) => (
                                 <button
-                                    className="h-10 w-10 rounded-lg border border-gray-400/40 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2 hover:scale-105 transition-transform"
-                                    style={{ backgroundColor: suggestion }}
-                                    key={suggestion}
+                                    className="h-10 w-10 rounded-lg border border-gray-400/40 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2 hover:scale-105 transition-transform relative group"
+                                    style={{ backgroundColor: suggestion.hex }}
+                                    key={suggestion.hex}
                                     onClick={() => {
-                                        setSelectedColor(suggestion);
+                                        setSelectedColor(suggestion.hex);
                                     }}
-                                    title={`Select color ${suggestion}`}
-                                    aria-label={`Select color ${suggestion}`}
+                                    title={`${suggestion.label} - ${suggestion.hex}`}
+                                    aria-label={`Select color ${suggestion.hex} with contrast ratio ${suggestion.contrastRatio}`}
                                 >
-
+                                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
+                                        <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                            {suggestion.level}
+                                        </span>
+                                    </div>
                                 </button>
                             ))
-                        }
+                        ) : (
+                            <div className="flex items-center justify-center w-full py-4 text-gray-500 text-sm">
+                                No suggestions available
+                            </div>
+                        )}
                     </div>
                 </div>
 

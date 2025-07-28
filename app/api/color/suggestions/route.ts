@@ -29,18 +29,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate accessible color suggestions
+    // Generate accessible color suggestions from original color
     let suggestions = generateAccessibleColors(textColor, bgColor, targetRatio);
 
-    // If we don't have enough suggestions, add fallbacks
+    // If we don't have enough AA+ suggestions, add intelligent fallbacks
     if (suggestions.length < 6) {
       const fallbacks = generateFallbackSuggestions(bgColor);
-      suggestions = [...suggestions, ...fallbacks].slice(0, 6);
+
+      // Combine and deduplicate suggestions
+      const allSuggestions = [...suggestions];
+      for (const fallback of fallbacks) {
+        if (!allSuggestions.some((s) => s.hex === fallback.hex)) {
+          allSuggestions.push(fallback);
+        }
+      }
+      suggestions = allSuggestions;
     }
 
+    // Return exactly 6 suggestions, prioritizing AA and AAA levels
+    const finalSuggestions = suggestions
+      .filter((s) => s.level !== "Fail") // Only AA and AAA
+      .sort((a, b) => b.contrastRatio - a.contrastRatio) // Highest contrast first
+      .slice(0, 6);
+
     return NextResponse.json({
-      suggestions,
-      count: suggestions.length,
+      suggestions: finalSuggestions,
+      count: finalSuggestions.length,
       targetRatio,
     });
   } catch (error) {
