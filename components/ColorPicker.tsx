@@ -14,9 +14,7 @@ type ClassValue =
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ClassDictionary = Record<string, any>;
 type ClassArray = ClassValue[];
-function clsx(...inputs: ClassValue[]): string {
-    return inputs.filter(Boolean).join(" ");
-}
+
 
 type hsl = {
     h: number;
@@ -434,39 +432,31 @@ function sanitizeHex(val: string) {
     return sanitized;
 }
 const ColorPicker = ({
-    default_value = "#1C9488",
+    value = "#1C9488", // Changed from default_value to value
     onChange,
     backgroundHex = "#ffffff"
 }: {
-    default_value?: string;
+    value?: string; // Changed from default_value to value
     onChange?: (color: string) => void;
     backgroundHex?: string;
 }) => {
-    // Initialize from controlled prop or a default
-    const [color, setColor] = useState<Color>(() => {
-        const hex = sanitizeHex(default_value);
+    // Remove internal state management - make it fully controlled
+    const color: Color = (() => {
+        const hex = sanitizeHex(value);
         const hsl = hexToHsl({ hex: hex });
         return { ...hsl, hex: sanitizeHex(hex) };
-    });
+    })();
 
-    // Update when default_value prop changes
-    useEffect(() => {
-        const hex = sanitizeHex(default_value);
-        const hsl = hexToHsl({ hex: hex });
-        setColor({ ...hsl, hex: sanitizeHex(hex) });
-    }, [default_value]);
+    // Remove the useEffect that was causing the issue
+
     // Update from hex input
     const handleHexInputChange = (newVal: string) => {
         const hex = sanitizeHex(newVal);
         if (hex.length === 6) {
-            const hsl = hexToHsl({ hex });
-            const newColor = { ...hsl, hex: hex };
-            setColor(newColor);
             onChange?.(`#${hex}`);
-        } else if (hex.length < 6) {
-            setColor((prev) => ({ ...prev, hex: hex }));
         }
     };
+
     return (
         <>
             <style
@@ -535,18 +525,14 @@ const ColorPicker = ({
                 <DraggableColorCanvas
                     {...color}
                     backgroundHex={backgroundHex}
-                    handleChange={(parital) => {
-                        setColor((prev) => {
-                            const value = { ...prev, ...parital };
-                            const hex_formatted = hslToHex({
-                                h: value.h,
-                                s: value.s,
-                                l: value.l,
-                            });
-                            const newColor = { ...value, hex: hex_formatted };
-                            onChange?.(`#${hex_formatted}`);
-                            return newColor;
+                    handleChange={(partial) => {
+                        const newColor = { ...color, ...partial };
+                        const hex_formatted = hslToHex({
+                            h: newColor.h,
+                            s: newColor.s,
+                            l: newColor.l,
                         });
+                        onChange?.(`#${hex_formatted}`);
                     }}
                 />
 
@@ -569,13 +555,9 @@ const ColorPicker = ({
                     }}
                     onChange={(e) => {
                         const hue = e.target.valueAsNumber;
-                        setColor((prev) => {
-                            const { hex, ...rest } = { ...prev, h: hue };
-                            const hex_formatted = hslToHex({ ...rest });
-                            const newColor = { ...rest, hex: hex_formatted };
-                            onChange?.(`#${hex_formatted}`);
-                            return newColor;
-                        });
+                        const newColor = { ...color, h: hue };
+                        const hex_formatted = hslToHex({ ...newColor });
+                        onChange?.(`#${hex_formatted}`);
                     }}
                 />
 

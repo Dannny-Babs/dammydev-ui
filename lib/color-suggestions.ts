@@ -169,6 +169,7 @@ export function generateFallbackSuggestions(
   bgColor: string
 ): ColorSuggestion[] {
   // Get the background color's HSL to create intelligent fallbacks
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [bgH, bgS, bgL] = rgbToHsl(...hexToRgb(bgColor));
 
   // Create intelligent fallbacks based on background color

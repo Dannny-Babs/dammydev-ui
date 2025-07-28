@@ -3,11 +3,17 @@
 import Button from "./ui/button"
 import ColorPicker from "./ColorPicker"
 import { CheckIcon, XIcon } from "lucide-react"
-
 import { useEffect, useState } from "react"
-import clsx from "clsx"
 import { getContrastColor, getContrastRatio, rgbToHex, hexToRgbValues, getColorSuggestions } from "@/lib/color-utils"
 import { getAccessibilityLevel, getContrastStatus, getAccessibilityBadge } from "@/lib/accessibility-utils"
+
+interface A11yMenuProps {
+    initialColor?: string;
+    backgroundColor?: string;
+    onColorChange?: (color: string) => void;
+    onClose?: () => void;
+    onApply?: (color: string) => void;
+}
 
 const HashtagIcon = (props: React.ComponentPropsWithoutRef<"svg">) => {
     return (
@@ -30,12 +36,18 @@ const HashtagIcon = (props: React.ComponentPropsWithoutRef<"svg">) => {
 
 
 
-export default function A11yMenu() {
+export default function A11yMenu({
+    initialColor = "#E89623",
+    backgroundColor = "#FFFFFF",
+    onColorChange,
+    onClose,
+    onApply
+}: A11yMenuProps) {
 
 
-    const [selectedColor, setSelectedColor] = useState("#E89623");
+    const [selectedColor, setSelectedColor] = useState(initialColor);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [backgroundColor, setBackgroundColor] = useState("#FFFFFF");
+    const [background, setBackground] = useState(backgroundColor);
     const [contrastRatio, setContrastRatio] = useState(4.51);
     const [rgbValues, setRgbValues] = useState({ r: 232, g: 150, b: 35 });
     const [suggestions, setSuggestions] = useState<Array<{
@@ -49,7 +61,7 @@ export default function A11yMenu() {
     useEffect(() => {
         const updateContrastRatio = async () => {
             try {
-                const result = await getContrastRatio(selectedColor, backgroundColor);
+                const result = await getContrastRatio(selectedColor, background);
                 setContrastRatio(result.contrastRatio);
             } catch (error) {
                 console.error('Failed to calculate contrast ratio:', error);
@@ -57,7 +69,7 @@ export default function A11yMenu() {
         };
 
         updateContrastRatio();
-    }, [selectedColor, backgroundColor]);
+    }, [selectedColor, background]);
 
     // Update RGB values when hex color changes
     useEffect(() => {
@@ -69,8 +81,8 @@ export default function A11yMenu() {
         const fetchSuggestions = async () => {
             setLoadingSuggestions(true);
             try {
-                console.log('Fetching suggestions for:', selectedColor, 'on', backgroundColor);
-                const result = await getColorSuggestions(selectedColor, backgroundColor);
+                console.log('Fetching suggestions for:', selectedColor, 'on', background);
+                const result = await getColorSuggestions(selectedColor, background);
                 console.log('Received suggestions:', result.suggestions);
                 setSuggestions(result.suggestions);
             } catch (error) {
@@ -83,7 +95,7 @@ export default function A11yMenu() {
         };
 
         fetchSuggestions();
-    }, [selectedColor, backgroundColor]);
+    }, [selectedColor, background]);
 
 
 
@@ -92,9 +104,9 @@ export default function A11yMenu() {
         <div className="flex flex-row gap-4 items-start justify-center   rounded-2xl p-2 border-1 border-gray-300 shadow-md ">
             <div className="flex flex-col gap-2 items-center justify-between   w-[300px] ">
                 <ColorPicker
-                    default_value={selectedColor}
+                    value={selectedColor} // Changed from default_value to value
                     onChange={setSelectedColor}
-                    backgroundHex={backgroundColor}
+                    backgroundHex={background}
                 />
 
                 <div className="flex flex-row gap-2 items-center justify-center w-full mt-4">
@@ -179,10 +191,10 @@ export default function A11yMenu() {
                         </div>
                     </div>
                     <div className="self-stretch w-full h-20 bg-white rounded-lg outline-1 outline-offset-[-1px] outline-stone-900/10 inline-flex flex-col justify-end items-start gap-2.5 overflow-hidden"
-                        style={{ backgroundColor: backgroundColor }}
+                        style={{ backgroundColor: background }}
                     >
-                        <div className={`self-stretch px-2 py-1.5 inline-flex justify-start items-center gap-2.5 ${getContrastColor(backgroundColor) === 'white' ? 'bg-black/20' : 'bg-white/20'}`}>
-                            <div className={`justify-start text-sm uppercase font-sans ${getContrastColor(backgroundColor)}`}>{backgroundColor}</div>
+                        <div className={`self-stretch px-2 py-1.5 inline-flex justify-start items-center gap-2.5 ${getContrastColor(background) === 'white' ? 'bg-black/20' : 'bg-white/20'}`}>
+                            <div className={`justify-start text-sm uppercase font-sans ${getContrastColor(background)}`}>{background}</div>
                         </div>
                     </div>
                 </div>
@@ -261,14 +273,15 @@ export default function A11yMenu() {
 
                 <div className="flex flex-row gap-2 items-end justify-end w-full">
                     <Button className="bg-gray-50 text-gray-800 hover:bg-gray-100 flex flex-row gap-2 items-center justify-center h-11" variant="secondary" onClick={() => {
-                        setSelectedColor("#E89623");
+                        setSelectedColor(initialColor);
+                        onClose?.();
                     }}>
                         Cancel
                     </Button>
-                    <Button className="bg-green-700 text-white hover:bg-green-800 shadow-sm flex flex-row gap-2 items-center justify-center h-11" onClick={() => {
-                        console.log(selectedColor);
+                    <Button className=" text-white  shadow-sm flex flex-row gap-2 items-center justify-center h-11 px-6" onClick={() => {
+                        onApply?.(selectedColor);
                     }}>
-                        Save
+                        Apply Fix
                     </Button>
                 </div>
 

@@ -64,7 +64,8 @@ export async function POST(request: NextRequest) {
       count: finalSuggestions.length,
       targetRatio,
     });
-  } catch (error) {
+    } catch (error) {
+    console.error("Error generating suggestions:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

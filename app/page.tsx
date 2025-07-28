@@ -11,7 +11,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col gap-4 p-5 w-full">
             <div className="flex flex-row gap-4 w-full justify-between items-center">
-              <Link href="/color-picker">Color Picker</Link>
+              <Link href="/color-picker">Contrast Checker</Link>
               <p className="text-neutral-400">
                 Jul 27, 2025
               </p>
