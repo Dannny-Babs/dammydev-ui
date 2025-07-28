@@ -127,6 +127,24 @@ function thresholdY(x: number, size: number, h: number, bgRgb: [number, number, 
     return lo;
 }
 
+// Smooth points using moving average
+function smoothPoints(
+    pts: { x: number; y: number }[],
+    windowSize = 7
+): { x: number; y: number }[] {
+    const half = Math.floor(windowSize / 2);
+    return pts.map((p, i, arr) => {
+        let sum = 0, count = 0;
+        for (let j = i - half; j <= i + half; j++) {
+            if (j >= 0 && j < arr.length) {
+                sum += arr[j].y;
+                count++;
+            }
+        }
+        return { x: p.x, y: sum / count };
+    });
+}
+
 // SVG-based contrast curve overlay
 const ContrastCurveOverlay = ({
     h,
@@ -159,12 +177,15 @@ const ContrastCurveOverlay = ({
             parseInt(backgroundHex.slice(5, 7), 16),
         ];
 
-        const arr: { x: number; y: number }[] = [];
+        // Generate raw points
+        const rawPoints: { x: number; y: number }[] = [];
         for (let x = 0; x < dimensions.width; x += 4) {   // step every 4px for performance
             const y = thresholdY(x, dimensions.height, h, bgRgb, 4.5); // for AA threshold
-            arr.push({ x, y });
+            rawPoints.push({ x, y });
         }
-        return arr;
+
+        // Smooth the points for a more elegant curve
+        return smoothPoints(rawPoints, 7);
     }, [h, backgroundHex, dimensions.width, dimensions.height]);
 
     // Build the SVG path string: M x0,y0 L x1,y1 … L xN,yN
@@ -217,13 +238,13 @@ const ContrastCurveOverlay = ({
                     - Start with full rect
                     - Subtract the area under the curve 
                 */}
-                                    <mask id="safeAreasMask">
-                    <rect x="0" y="0" width={dimensions.width} height={dimensions.height} fill="white" />
-                    <path
-                        d={`${curvePath} L ${dimensions.width} ${dimensions.height} L 0 ${dimensions.height} Z`}
-                        fill="black"
-                    />
-                </mask>
+                    <mask id="safeAreasMask">
+                        <rect x="0" y="0" width={dimensions.width} height={dimensions.height} fill="white" />
+                        <path
+                            d={`${curvePath} L ${dimensions.width} ${dimensions.height} L 0 ${dimensions.height} Z`}
+                            fill="black"
+                        />
+                    </mask>
                 </defs>
 
                 {/* 1) Draw the white shadowed curve */}
@@ -237,224 +258,224 @@ const ContrastCurveOverlay = ({
                     strokeLinejoin="round"
                 />
 
-                            {/* 2) Dot grid in the compliant (masked) area */}
-            <rect
-                x={0}
-                y={0}
-                width={dimensions.width}
-                height={dimensions.height}
-                fill="url(#dotGrid)"
-                opacity={0.25}
-                mask="url(#safeAreasMask)"
-            />
-        </svg>
+                {/* 2) Dot grid in the compliant (masked) area */}
+                <rect
+                    x={0}
+                    y={0}
+                    width={dimensions.width}
+                    height={dimensions.height}
+                    fill="url(#dotGrid)"
+                    opacity={0.25}
+                    mask="url(#safeAreasMask)"
+                />
+            </svg>
         </div>
     );
 };
 
-            // Helper functions for compliance overlay
-            function contrastRatio(fgRgb: [number, number, number], bgRgb: [number, number, number]): number {
-                function luminance([r, g, b]: [number, number, number]): number {
-                    const toLinear = (c: number) => {
-                        c /= 255;
-                        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-                    };
-                    const R = toLinear(r);
-                    const G = toLinear(g);
-                    const B = toLinear(b);
-                    return 0.2126 * R + 0.7152 * G + 0.0722 * B;
-                }
+// Helper functions for compliance overlay
+function contrastRatio(fgRgb: [number, number, number], bgRgb: [number, number, number]): number {
+    function luminance([r, g, b]: [number, number, number]): number {
+        const toLinear = (c: number) => {
+            c /= 255;
+            return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        };
+        const R = toLinear(r);
+        const G = toLinear(g);
+        const B = toLinear(b);
+        return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+    }
     const L1 = luminance(fgRgb);
-            const L2 = luminance(bgRgb);
-            return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+    const L2 = luminance(bgRgb);
+    return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
 }
 
-            function hslToRgb(h: number, s: number, l: number): [number, number, number] {
-                s /= 100;
-            l /= 100;
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+    s /= 100;
+    l /= 100;
     const k = (n: number) => (n + h / 30) % 12;
-            const a = s * Math.min(l, 1 - l);
+    const a = s * Math.min(l, 1 - l);
     const f = (n: number) => l - a * Math.max(Math.min(k(n) - 3, 9 - k(n), 1), -1);
-            return [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))];
+    return [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))];
 }
 
-            const DraggableColorCanvas = ({
-                h,
-                s,
-                l,
-                handleChange,
-                backgroundHex = "#ffffff",
+const DraggableColorCanvas = ({
+    h,
+    s,
+    l,
+    handleChange,
+    backgroundHex = "#ffffff",
 }: hsl & {
-                handleChange: (e: Partial<Color>) => void;
-                    backgroundHex?: string;
+    handleChange: (e: Partial<Color>) => void;
+    backgroundHex?: string;
 }) => {
     const [dragging, setDragging] = useState(false);
-                const colorAreaRef = useRef<HTMLDivElement>(null);
+    const colorAreaRef = useRef<HTMLDivElement>(null);
 
-                    const calculateSaturationAndLightness = useCallback(
+    const calculateSaturationAndLightness = useCallback(
         (clientX: number, clientY: number) => {
             if (!colorAreaRef.current) return;
-                    const rect = colorAreaRef.current.getBoundingClientRect();
-                    const x = clientX - rect.left;
-                    const y = clientY - rect.top;
-                    const xClamped = Math.max(0, Math.min(x, rect.width));
-                    const yClamped = Math.max(0, Math.min(y, rect.height));
-                    const newSaturation = Math.round((xClamped / rect.width) * 100);
-                    const newLightness = 100 - Math.round((yClamped / rect.height) * 100);
-                    handleChange({s: newSaturation, l: newLightness });
+            const rect = colorAreaRef.current.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+            const xClamped = Math.max(0, Math.min(x, rect.width));
+            const yClamped = Math.max(0, Math.min(y, rect.height));
+            const newSaturation = Math.round((xClamped / rect.width) * 100);
+            const newLightness = 100 - Math.round((yClamped / rect.height) * 100);
+            handleChange({ s: newSaturation, l: newLightness });
         },
-                    [handleChange],
-                    );
+        [handleChange],
+    );
 
-                    // Mouse event handlers
-                    const handleMouseMove = useCallback(
+    // Mouse event handlers
+    const handleMouseMove = useCallback(
         (e: MouseEvent) => {
-                        e.preventDefault();
-                    calculateSaturationAndLightness(e.clientX, e.clientY);
+            e.preventDefault();
+            calculateSaturationAndLightness(e.clientX, e.clientY);
         },
-                    [calculateSaturationAndLightness],
-                    );
+        [calculateSaturationAndLightness],
+    );
 
     const handleMouseUp = useCallback(() => {
-                        setDragging(false);
+        setDragging(false);
     }, []);
 
-                    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-                        e.preventDefault();
-                        setDragging(true);
-                        calculateSaturationAndLightness(e.clientX, e.clientY);
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setDragging(true);
+        calculateSaturationAndLightness(e.clientX, e.clientY);
     };
 
-                        // Touch event handlers
-                        const handleTouchMove = useCallback(
+    // Touch event handlers
+    const handleTouchMove = useCallback(
         (e: TouchEvent) => {
-                            e.preventDefault();
-                        const touch = e.touches[0];
-                        if (touch) {
-                            calculateSaturationAndLightness(touch.clientX, touch.clientY);
+            e.preventDefault();
+            const touch = e.touches[0];
+            if (touch) {
+                calculateSaturationAndLightness(touch.clientX, touch.clientY);
             }
         },
-                        [calculateSaturationAndLightness],
-                        );
+        [calculateSaturationAndLightness],
+    );
 
     const handleTouchEnd = useCallback(() => {
-                            setDragging(false);
+        setDragging(false);
     }, []);
 
-                        const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-                            e.preventDefault();
-                            const touch = e.touches[0];
-                            if (touch) {
-                                setDragging(true);
-                            calculateSaturationAndLightness(touch.clientX, touch.clientY);
+    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        if (touch) {
+            setDragging(true);
+            calculateSaturationAndLightness(touch.clientX, touch.clientY);
         }
     };
 
     useEffect(() => {
         if (dragging) {
-                                window.addEventListener("mousemove", handleMouseMove);
-                            window.addEventListener("mouseup", handleMouseUp);
-                            window.addEventListener("touchmove", handleTouchMove, {passive: false });
-                            window.addEventListener("touchend", handleTouchEnd);
+            window.addEventListener("mousemove", handleMouseMove);
+            window.addEventListener("mouseup", handleMouseUp);
+            window.addEventListener("touchmove", handleTouchMove, { passive: false });
+            window.addEventListener("touchend", handleTouchEnd);
         } else {
-                                window.removeEventListener("mousemove", handleMouseMove);
-                            window.removeEventListener("mouseup", handleMouseUp);
-                            window.removeEventListener("touchmove", handleTouchMove);
-                            window.removeEventListener("touchend", handleTouchEnd);
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+            window.removeEventListener("touchmove", handleTouchMove);
+            window.removeEventListener("touchend", handleTouchEnd);
         }
 
         return () => {
-                                window.removeEventListener("mousemove", handleMouseMove);
-                            window.removeEventListener("mouseup", handleMouseUp);
-                            window.removeEventListener("touchmove", handleTouchMove);
-                            window.removeEventListener("touchend", handleTouchEnd);
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+            window.removeEventListener("touchmove", handleTouchMove);
+            window.removeEventListener("touchend", handleTouchEnd);
         };
     }, [
-                            dragging,
-                            handleMouseMove,
-                            handleMouseUp,
-                            handleTouchMove,
-                            handleTouchEnd,
-                            ]);
+        dragging,
+        handleMouseMove,
+        handleMouseUp,
+        handleTouchMove,
+        handleTouchEnd,
+    ]);
 
-                            return (
-                            <div
-                                ref={colorAreaRef}
-                                className="h-48 w-full touch-auto overscroll-none rounded-xl border border-zinc-200 dark:touch-auto relative"
-                                style={{
-                                    background: `linear-gradient(to top, #000, transparent, #fff), linear-gradient(to left, hsl(${h}, 100%, 50%), #bbb)`,
-                                    position: "relative",
-                                    cursor: "crosshair",
-                                }}
-                                onMouseDown={handleMouseDown}
-                                onTouchStart={handleTouchStart}
-                            >
-                                <ContrastCurveOverlay h={h} backgroundHex={backgroundHex} />
-                                <div
-                                    className="color-selector border-4 border-white ring-1 ring-zinc-200 z-20"
-                                    style={{
-                                        position: "absolute",
-                                        width: "20px",
-                                        height: "20px",
-                                        borderRadius: "50%",
-                                        background: `hsl(${h}, ${s}%, ${l}%)`,
-                                        transform: "translate(-50%, -50%)",
-                                        left: `${s}%`,
-                                        top: `${100 - l}%`,
-                                        cursor: dragging ? "grabbing" : "grab",
-                                    }}
-                                ></div>
-                            </div>
-                            );
+    return (
+        <div
+            ref={colorAreaRef}
+            className="h-48 w-full touch-auto overscroll-none rounded-xl border border-zinc-200 dark:touch-auto relative"
+            style={{
+                background: `linear-gradient(to top, #000, transparent, #fff), linear-gradient(to left, hsl(${h}, 100%, 50%), #bbb)`,
+                position: "relative",
+                cursor: "crosshair",
+            }}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+        >
+            <ContrastCurveOverlay h={h} backgroundHex={backgroundHex} />
+            <div
+                className="color-selector border-4 border-white ring-1 ring-zinc-200 z-20"
+                style={{
+                    position: "absolute",
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    background: `hsl(${h}, ${s}%, ${l}%)`,
+                    transform: "translate(-50%, -50%)",
+                    left: `${s}%`,
+                    top: `${100 - l}%`,
+                    cursor: dragging ? "grabbing" : "grab",
+                }}
+            ></div>
+        </div>
+    );
 };
 
-                            function sanitizeHex(val: string) {
+function sanitizeHex(val: string) {
     const sanitized = val.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-                            return sanitized;
+    return sanitized;
 }
-                            const ColorPicker = ({
-                                default_value = "#1C9488",
-                                onChange,
-                                backgroundHex = "#ffffff"
-                            }: {
-                                default_value ?: string;
+const ColorPicker = ({
+    default_value = "#1C9488",
+    onChange,
+    backgroundHex = "#ffffff"
+}: {
+    default_value?: string;
     onChange?: (color: string) => void;
-                            backgroundHex?: string;
+    backgroundHex?: string;
 }) => {
     // Initialize from controlled prop or a default
     const [color, setColor] = useState<Color>(() => {
         const hex = sanitizeHex(default_value);
-                                const hsl = hexToHsl({hex: hex });
-                                return {...hsl, hex: sanitizeHex(hex) };
+        const hsl = hexToHsl({ hex: hex });
+        return { ...hsl, hex: sanitizeHex(hex) };
     });
 
     // Update when default_value prop changes
     useEffect(() => {
         const hex = sanitizeHex(default_value);
-                                const hsl = hexToHsl({hex: hex });
-                                setColor({...hsl, hex: sanitizeHex(hex) });
+        const hsl = hexToHsl({ hex: hex });
+        setColor({ ...hsl, hex: sanitizeHex(hex) });
     }, [default_value]);
     // Update from hex input
     const handleHexInputChange = (newVal: string) => {
         const hex = sanitizeHex(newVal);
-                                if (hex.length === 6) {
-            const hsl = hexToHsl({hex});
-                                const newColor = {...hsl, hex: hex };
-                                setColor(newColor);
-                                onChange?.(`#${hex}`);
+        if (hex.length === 6) {
+            const hsl = hexToHsl({ hex });
+            const newColor = { ...hsl, hex: hex };
+            setColor(newColor);
+            onChange?.(`#${hex}`);
         } else if (hex.length < 6) {
-                                    setColor((prev) => ({ ...prev, hex: hex }));
+            setColor((prev) => ({ ...prev, hex: hex }));
         }
     };
-                                return (
-                                <>
-                                    <style
-                                        id="slider-thumb-style"
-                                        dangerouslySetInnerHTML={{
-                                            // For the input range thumb styles. Some things are just easier to add to an external stylesheet.
-                                            // don't actually put this in production.
-                                            // Just putting this here for the sake of a single file in this example
-                                            __html: `
+    return (
+        <>
+            <style
+                id="slider-thumb-style"
+                dangerouslySetInnerHTML={{
+                    // For the input range thumb styles. Some things are just easier to add to an external stylesheet.
+                    // don't actually put this in production.
+                    // Just putting this here for the sake of a single file in this example
+                    __html: `
               input[type='range']::-webkit-slider-thumb {
                 -webkit-appearance: none;
                 appearance: none;
@@ -500,44 +521,44 @@ const ContrastCurveOverlay = ({
                 box-shadow: 0 0 0 1px #3f3f46; 
               }
               `,
-                                        }}
-                                    />
-                                    <div
-                                        style={
-                                            {
-                                                "--thumb-border-color": "#000000",
-                                                "--thumb-ring-color": "#666666",
-                                            } as React.CSSProperties
-                                        }
-                                        className="z-30 flex w-full max-w-[500px] select-none flex-col items-center gap-3 overscroll-none  "
-                                    >
-                                        <DraggableColorCanvas
-                                            {...color}
-                                            backgroundHex={backgroundHex}
-                                            handleChange={(parital) => {
-                                                setColor((prev) => {
-                                                    const value = { ...prev, ...parital };
-                                                    const hex_formatted = hslToHex({
-                                                        h: value.h,
-                                                        s: value.s,
-                                                        l: value.l,
-                                                    });
-                                                    const newColor = { ...value, hex: hex_formatted };
-                                                    onChange?.(`#${hex_formatted}`);
-                                                    return newColor;
-                                                });
-                                            }}
-                                        />
+                }}
+            />
+            <div
+                style={
+                    {
+                        "--thumb-border-color": "#000000",
+                        "--thumb-ring-color": "#666666",
+                    } as React.CSSProperties
+                }
+                className="z-30 flex w-full max-w-[500px] select-none flex-col items-center gap-3 overscroll-none  "
+            >
+                <DraggableColorCanvas
+                    {...color}
+                    backgroundHex={backgroundHex}
+                    handleChange={(parital) => {
+                        setColor((prev) => {
+                            const value = { ...prev, ...parital };
+                            const hex_formatted = hslToHex({
+                                h: value.h,
+                                s: value.s,
+                                l: value.l,
+                            });
+                            const newColor = { ...value, hex: hex_formatted };
+                            onChange?.(`#${hex_formatted}`);
+                            return newColor;
+                        });
+                    }}
+                />
 
 
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="360"
-                                            value={color.h}
-                                            className={`h-3 w-full cursor-pointer appearance-none rounded-full border border-zinc-200 bg-white mt-2`}
-                                            style={{
-                                                background: `linear-gradient(to right, 
+                <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    value={color.h}
+                    className={`h-3 w-full cursor-pointer appearance-none rounded-full border border-zinc-200 bg-white mt-2`}
+                    style={{
+                        background: `linear-gradient(to right, 
                     hsl(0, 100%, 50%), 
                     hsl(60, 100%, 50%), 
                     hsl(120, 100%, 50%), 
@@ -545,22 +566,22 @@ const ContrastCurveOverlay = ({
                     hsl(240, 100%, 50%), 
                     hsl(300, 100%, 50%), 
                     hsl(360, 100%, 50%))`,
-                                            }}
-                                            onChange={(e) => {
-                                                const hue = e.target.valueAsNumber;
-                                                setColor((prev) => {
-                                                    const { hex, ...rest } = { ...prev, h: hue };
-                                                    const hex_formatted = hslToHex({ ...rest });
-                                                    const newColor = { ...rest, hex: hex_formatted };
-                                                    onChange?.(`#${hex_formatted}`);
-                                                    return newColor;
-                                                });
-                                            }}
-                                        />
+                    }}
+                    onChange={(e) => {
+                        const hue = e.target.valueAsNumber;
+                        setColor((prev) => {
+                            const { hex, ...rest } = { ...prev, h: hue };
+                            const hex_formatted = hslToHex({ ...rest });
+                            const newColor = { ...rest, hex: hex_formatted };
+                            onChange?.(`#${hex_formatted}`);
+                            return newColor;
+                        });
+                    }}
+                />
 
-                                    </div>
-                                </>
-                                );
+            </div>
+        </>
+    );
 };
 
-                                export default ColorPicker;
+export default ColorPicker;

@@ -221,8 +221,8 @@ export default function AccessibleColorPicker() {
                     </h3>
                     <div className="flex flex-wrap gap-2 items-start justify-start w-full bg-gray-50 rounded-xl p-2 border-1 border-slate-200 min-h-[60px]">
                         {loadingSuggestions ? (
-                            <div className="flex items-center justify-center w-full py-4">
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
+                            <div className="flex items-center justify-center w-full py-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
                             </div>
                         ) : suggestions.length > 0 ? (
                             suggestions.map((suggestion) => (
@@ -252,12 +252,12 @@ export default function AccessibleColorPicker() {
                 </div>
 
                 <div className="flex flex-row gap-2 items-end justify-end w-full">
-                    <Button className="bg-gray-50 text-gray-800 hover:bg-gray-100 flex flex-row gap-2 items-center justify-center" variant="secondary" onClick={() => {
+                    <Button className="bg-gray-50 text-gray-800 hover:bg-gray-100 flex flex-row gap-2 items-center justify-center h-11" variant="secondary" onClick={() => {
                         setSelectedColor("#E89623");
                     }}>
                         Cancel
                     </Button>
-                    <Button className="bg-green-700 text-white hover:bg-green-800 shadow-sm flex flex-row gap-2 items-center justify-center" onClick={() => {
+                    <Button className="bg-green-700 text-white hover:bg-green-800 shadow-sm flex flex-row gap-2 items-center justify-center h-11" onClick={() => {
                         console.log(selectedColor);
                     }}>
                         Save
