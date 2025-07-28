@@ -66,8 +66,8 @@ export function hexToRgbValues(hex: string): {
 }
 
 export async function getColorSuggestions(
-  textColor: string,
-  bgColor: string,
+  textHex: string,
+  bgHex: string,
   targetRatio: number = 4.5
 ) {
   const response = await fetch("/api/color/suggestions", {
@@ -75,7 +75,7 @@ export async function getColorSuggestions(
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ textColor, bgColor, targetRatio }),
+    body: JSON.stringify({ textHex, bgHex, targetRatio }),
   });
 
   if (!response.ok) {

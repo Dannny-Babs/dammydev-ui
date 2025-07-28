@@ -34,6 +34,7 @@ export default function AccessibleColorPicker() {
 
 
     const [selectedColor, setSelectedColor] = useState("#E89623");
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [backgroundColor, setBackgroundColor] = useState("#FFFFFF");
     const [contrastRatio, setContrastRatio] = useState(4.51);
     const [rgbValues, setRgbValues] = useState({ r: 232, g: 150, b: 35 });
@@ -68,10 +69,14 @@ export default function AccessibleColorPicker() {
         const fetchSuggestions = async () => {
             setLoadingSuggestions(true);
             try {
+                console.log('Fetching suggestions for:', selectedColor, 'on', backgroundColor);
                 const result = await getColorSuggestions(selectedColor, backgroundColor);
+                console.log('Received suggestions:', result.suggestions);
                 setSuggestions(result.suggestions);
             } catch (error) {
                 console.error('Failed to fetch color suggestions:', error);
+                // Fallback to empty suggestions on error
+                setSuggestions([]);
             } finally {
                 setLoadingSuggestions(false);
             }
@@ -216,20 +221,23 @@ export default function AccessibleColorPicker() {
                 </div>
 
                 <div className="flex flex-col gap-2 items-start justify-center w-full">
-                    <h3 className="text-sm font-medium font-sans text-neutral-800">
-                        Suggestions
-                    </h3>
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-medium font-sans text-neutral-800">
+                            Suggestions
+                        </h3>
+
+                    </div>
                     <div className="flex flex-wrap gap-2 items-start justify-start w-full bg-gray-50 rounded-xl p-2 border-1 border-slate-200 min-h-[60px]">
                         {loadingSuggestions ? (
                             <div className="flex items-center justify-center w-full py-2">
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
                             </div>
                         ) : suggestions.length > 0 ? (
-                            suggestions.map((suggestion) => (
+                            suggestions.map((suggestion, index) => (
                                 <button
                                     className="h-10 w-10 rounded-lg border border-gray-400/40 focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2 hover:scale-105 transition-transform relative group"
                                     style={{ backgroundColor: suggestion.hex }}
-                                    key={suggestion.hex}
+                                    key={`${suggestion.hex}-${selectedColor}-${index}`}
                                     onClick={() => {
                                         setSelectedColor(suggestion.hex);
                                     }}
@@ -244,7 +252,7 @@ export default function AccessibleColorPicker() {
                                 </button>
                             ))
                         ) : (
-                            <div className="flex items-center justify-center w-full py-4 text-gray-500 text-sm">
+                            <div className="flex items-center justify-center w-full py-2 text-gray-500 text-sm">
                                 No suggestions available
                             </div>
                         )}

@@ -1,7 +1,7 @@
 "use client"
 import Button from "@/components/ui/button";
 import { ChevronRightIcon, InfoIcon } from "lucide-react";
-import AccessibleColorPicker from "@/components/AccessibleColorPicker";
+import AccessibleColorPicker from "@/components/a11y-menu";
 
 export default function ColorPicker() {
     return (
