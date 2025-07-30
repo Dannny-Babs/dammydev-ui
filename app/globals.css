@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --color-black: #000000;
+  --color-white: #ffffff;
 }
 
 .dark-button {
@@ -36,4 +38,22 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+
+.\[--pattern-fg\:var\(--color-black\)\]\/5 {
+    --pattern-fg: rgba(255, 255, 255, 0.1);
+}
+
+.dark .\[--pattern-fg\:var\(--color-white\)\]\/10 {
+    --pattern-fg: rgba(255, 255, 255, 0.1);
+}
+.bg-fixed {
+    background-attachment: fixed;
+}
+.bg-\[size\:10px_10px\] {
+    background-size: 10px 10px;
+}
+.bg-\[image\:repeating-linear-gradient\(315deg\,_var\(--pattern-fg\)_0\,_var\(--pattern-fg\)_1px\,_transparent_0\,_transparent_50\%\)\] {
+    background-image: repeating-linear-gradient(315deg, var(--pattern-fg) 0, var(--pattern-fg) 1px, transparent 0, transparent 50%);
 }
