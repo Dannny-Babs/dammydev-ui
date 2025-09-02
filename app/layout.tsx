@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import {  Albert_Sans } from "next/font/google";
+import { Albert_Sans } from "next/font/google";
 import "./globals.css";
 
 const albertSans = Albert_Sans({
@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${albertSans.variable} antialiased px-4`}>
+      <body className={`${albertSans.variable} antialiased px-6`}>
         {children}
       </body>
     </html>

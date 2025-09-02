@@ -23,6 +23,12 @@ export default function Home() {
               Jul 30, 2025
             </p>
           </div>
+          <div className="flex flex-row gap-4 w-full justify-between items-center">
+            <Link href="/table-of-contents" className="hover:underline hover:text-blue-400">Table of Contents</Link>
+            <p className="text-neutral-400 text-sm">
+              Sep 2, 2025
+            </p>
+          </div>
         </div>
       </div>
 
