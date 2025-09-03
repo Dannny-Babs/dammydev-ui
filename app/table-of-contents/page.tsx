@@ -68,7 +68,7 @@ export default function TableOfContentsPage() {
                             <p className="text-base mt-4">I also plan to add the ability to add custom icons to the sections, and the ability to add custom colors to the sections.</p>
                         </section>
 
-                        {/* Bottom gradient overlay for mobile */}
+                        {/* Bottom gradient overlay */}
                         <div className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-40"></div>
                     </div>
                 </div>
