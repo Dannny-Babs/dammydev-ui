@@ -152,7 +152,7 @@ export default function TableOfContentsMorph({ }: TableOfContentsProps) {
                                 >
                                     <motion.button
                                         onClick={() => scrollToSection(item.id)}
-                                        className={`flex flex-row  align-left text-left space-y-2 gap-2 ${activeId === item.id ? 'text-white' : 'text-neutral-300'} hover:text-white hover:cursor-pointer`}
+                                        className={`flex flex-row  align-left text-left space-y-2 gap-2 ${activeId === item.id ? 'text-white' : 'text-neutral-400'} hover:text-white hover:cursor-pointer`}
                                         whileHover={{ x: 2 }}
                                         whileTap={{ scale: 0.99 }}
                                         transition={{ duration: 0.1 }}
@@ -161,7 +161,7 @@ export default function TableOfContentsMorph({ }: TableOfContentsProps) {
 
                                         {/* Section Number */}
                                         <span className={`text-sm `}>{(index + 1).toString().padStart(2, '0')}.</span>
-                                        <h3 className={`text-sm ${activeId === item.id ? 'text-white' : 'text-neutral-300'} `}>{item.title}</h3>
+                                        <h3 className={`text-sm  `}>{item.title}</h3>
 
                                     </motion.button>
                                 </motion.div>
