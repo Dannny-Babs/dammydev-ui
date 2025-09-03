@@ -27,12 +27,6 @@ box-shadow: 0 2px 4px 0 rgba(51, 51, 51, 0.06), 0 0 0 1px #E9E9E9, 0 -0.5px 0.5p
   --font-mono: var(--font-albert-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
 
 body {
   background: var(--background);

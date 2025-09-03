@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${albertSans.variable} antialiased px-6`}>
+      <body className={`${albertSans.variable} antialiased`}>
         {children}
       </body>
     </html>
