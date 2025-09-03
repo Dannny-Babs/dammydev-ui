@@ -13,7 +13,7 @@ export default function TableOfContentsPage() {
 
                     <div className="flex-1 max-w-4xl md:pb-28 pb-20">
                         {/* Mobile floating dock - positioned via CSS */}
-                        <div className="items-center justify-center flex">
+                        <div className="items-center justify-center lg:flex">
                             <TableOfContentsMorph />
                         </div>
 
